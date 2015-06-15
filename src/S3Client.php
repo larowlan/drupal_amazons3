@@ -68,7 +68,12 @@ class S3Client {
    */
   public static function factory($config = array()) {
     if (!isset($config['credentials'])) {
-      $config['credentials'] = new Credentials(static::variable_get('amazons3_key'), static::variable_get('amazons3_secret'));
+      if (!static::variable_get('amazons3_use_environment_iam', FALSE)) {
+        $config['credentials'] = new Credentials(static::variable_get('amazons3_key'), static::variable_get('amazons3_secret'));
+      }
+      else {
+        $config['credentials'] = Credentials::factory(array());
+      }
     }
 
     $curl_defaults = array(

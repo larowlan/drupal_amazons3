@@ -6,18 +6,38 @@
 function amazons3_admin() {
   $form = array();
 
+  $form['amazons3_use_environment_iam'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('I am using environment variables or IAM roles to manage my key/secret.'),
+    '#default_value' => variable_get('amazons3_use_environment_iam', FALSE),
+  );
+
   $form['amazons3_key'] = array(
     '#type' => 'textfield',
     '#title' => t('Amazon S3 API Key'),
     '#default_value' => variable_get('amazons3_key', ''),
-    '#required' => TRUE,
+    '#states' => array(
+      'disabled' => array(
+        ':input[name="amazons3_use_environment_iam"]' => array('checked' => TRUE),
+      ),
+      'optional' => array(
+        ':input[name="amazons3_use_environment_iam"]' => array('checked' => TRUE),
+      ),
+    ),
   );
 
   $form['amazons3_secret'] = array(
     '#type' => 'textfield',
     '#title' => t('Amazon S3 API Secret'),
     '#default_value' => variable_get('amazons3_secret', ''),
-    '#required' => TRUE,
+    '#states' => array(
+      'disabled' => array(
+        ':input[name="amazons3_use_environment_iam"]' => array('checked' => TRUE),
+      ),
+      'optional' => array(
+        ':input[name="amazons3_use_environment_iam"]' => array('checked' => TRUE),
+      ),
+    ),
   );
 
   $form['amazons3_bucket'] = array(
@@ -140,6 +160,12 @@ function amazons3_admin_validate($form, &$form_state) {
     if (empty($keypair) || empty($pem)) {
       form_set_error('amazons3_cloudfront', t('You must configure your CloudFront credentials in settings.php.'));
     }
+  }
+  if (!$form_state['values']['amazons3_use_environment_iam'] && (empty($form_state['values']['amazons3_key']))) {
+    form_set_error('amazons3_key', t('You must provide a key if not using environment variables or IAM roles'));
+  }
+  if (!$form_state['values']['amazons3_use_environment_iam'] && (empty($form_state['values']['amazons3_secret']))) {
+    form_set_error('amazons3_secret', t('You must provide a secret if not using environment variables or IAM roles'));
   }
 }
 

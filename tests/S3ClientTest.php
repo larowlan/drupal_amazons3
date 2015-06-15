@@ -10,6 +10,15 @@ use Guzzle\Tests\GuzzleTestCase;
 class S3ClientTest extends GuzzleTestCase {
 
   /**
+   * {@inheritdoc}
+   */
+  protected function tearDown() {
+    parent::tearDown();
+    // Reset the variable data - its nasty that this leaks into globals.
+    DrupalS3Client::setVariableData(array());
+  }
+
+  /**
    * @covers Drupal\amazons3\S3Client::factory
    */
   public function testFactory() {
@@ -20,8 +29,37 @@ class S3ClientTest extends GuzzleTestCase {
     $client = DrupalS3Client::factory();
     $this->assertInstanceOf('Aws\S3\S3Client', $client);
     $this->assertEquals('placeholder', $client->getCredentials()->getAccessKeyId('placeholder'));
+  }
 
-    DrupalS3Client::setVariableData(array());
+  /**
+   * @covers Drupal\amazons3\S3Client::factory
+   */
+  public function testFactoryEnvironmentIAM() {
+    DrupalS3Client::setVariableData([
+      'amazons3_use_environment_iam' => TRUE,
+    ]);
+    $client = DrupalS3Client::factory();
+    $this->assertInstanceOf('Aws\S3\S3Client', $client);
+  }
+
+  /**
+   * @covers Drupal\amazons3\S3Client::factory
+   *
+   * When running this outside an EC2 instance with a configured IAM role, the
+   * instance profile metadata server isn't available, attempting to get the
+   * credentials from the client without a key or secret should raise an
+   * exception.
+   *
+   * @expectedException \Aws\Common\Exception\InstanceProfileCredentialsException
+   * @expectedExceptionMessage Error retrieving credentials from the instance profile metadata server. When you are not running inside of Amazon EC2, you must provide your AWS access key ID and secret access key in the "key" and "secret" options
+   */
+  public function testFactoryEnvironmentIAMGetCredentials() {
+    DrupalS3Client::setVariableData([
+      'amazons3_use_environment_iam' => TRUE,
+    ]);
+    $client = DrupalS3Client::factory();
+    $this->assertInstanceOf('Aws\S3\S3Client', $client);
+    $client->getCredentials()->getAccessKeyId();
   }
 
   /**
